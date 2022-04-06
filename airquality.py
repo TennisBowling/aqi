@@ -1,39 +1,38 @@
 import time
-from Adafruit_IO import Client
 from sds011 import SDS011
 import aqi
+import sqlite3
 
 DEBUG = True
 
-
-aio = Client('TennisBowling', 'aio_gqkK69eDWJS767YXKJERgogcj30R')
-print('yo mama logged in')
-
-sensor = SDS011('/dev/ttyUSB0', use_query_mode=True)
+sensor = SDS011('COM3', use_query_mode=True)
+db = sqlite3.connect('airquality.db')
 
 # calibrate itself real fast
 if DEBUG: print('calibrating')
 sensor.sleep(sleep=False)
-if not DEBUG: time.sleep(15)
+time.sleep(15)
 
-while True:
-	if DEBUG: print('beginning collection')
-	data = sensor.query()
+try:
+	while True:
+		if DEBUG: print('beginning collection')
+		data = sensor.query()
 
-	quality_rating = (-1, aqi.US_2_5.apply(data[0]), aqi.US_10.apply(data[1]))
-	quality_rating = max(list(filter(lambda x: x != None, quality_rating)))
-	quality_rating = round(quality_rating, 2)
+		quality_rating = (-1, aqi.US_2_5.apply(data[0]), aqi.US_10.apply(data[1]))
+		quality_rating = max(list(filter(lambda x: x != None, quality_rating)))
+		quality_rating = round(quality_rating, 2)
 
-	# print debug data
-	if DEBUG:
-		print('2.5: {0} ug/m3, 10: {1} ug/m3'.format(*data))
-		print('AQI: {0}'.format(quality_rating))
+		# print debug data
+		if DEBUG:
+			print(f'2.5: {data[0]} ug/m3, 10: {data[1]} ug/m3')
+			print(f'AQI: {quality_rating}')
 
-	# Sned/Senf it over to AIO
-	aio.send('kirklandtwofive', data[0])
-	aio.send('kirklandten', data[1])
-	aio.send('kirklandaqi', quality_rating)
+		# sned to database
+		db.execute("""INSERT INTO data ("pm25", "pm10", "aqi", "time") VALUES (?, ?, ?, ?);""", (data[0], data[1], quality_rating, int(time.time())))
 
-
-	# wait an arbitrary amount of secs before getting the next reading
-	time.sleep(10)
+		# wait an arbitrary amount of secs before getting the next reading
+		time.sleep(10)
+except:
+	db.commit()
+	db.close()
+	raise
