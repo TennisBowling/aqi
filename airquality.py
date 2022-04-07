@@ -1,6 +1,7 @@
 import time
 from sds011 import SDS011
 import aqi
+from datetime import datetime
 import sqlite3
 
 DEBUG = True
@@ -28,7 +29,8 @@ try:
 			print(f'AQI: {quality_rating}')
 
 		# sned to database
-		db.execute("""INSERT INTO data ("pm25", "pm10", "aqi", "time") VALUES (?, ?, ?, ?);""", (data[0], data[1], quality_rating, int(time.time())))
+		db.execute("""INSERT INTO data ("pm25", "pm10", "aqi", "time") VALUES (?, ?, ?, ?);""", (data[0], data[1], quality_rating, int(datetime.now().timestamp())))
+		db.commit()
 
 		# wait an arbitrary amount of secs before getting the next reading
 		time.sleep(10)
