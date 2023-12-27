@@ -2,6 +2,7 @@
 """
 import struct
 import serial
+from . import aqi
 
 #TODO: Commands against the sensor should read the reply and return success status.
 
@@ -164,3 +165,11 @@ class SDS011(object):
             if d[0:1] == b"\xc0":
                 data = self._process_frame(byte + d)
                 return data
+            
+    def read_aqi(self):
+        pm25, pm10 = self.query()
+
+        quality_rating = (-1, aqi.US_2_5.apply(pm25), aqi.US_10.apply(pm10))
+        quality_rating = max(list(filter(lambda x: x != None, quality_rating)))
+        quality_rating = round(quality_rating)
+        return quality_rating
