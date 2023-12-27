@@ -3,8 +3,14 @@
 import struct
 import serial
 from . import aqi
+from typing import TypedDict
 
 #TODO: Commands against the sensor should read the reply and return success status.
+
+class SDS011Reading(TypedDict):
+    pm25: float
+    pm10: float
+    aqi: int
 
 class SDS011(object):
     """Provides method to read from a SDS011 air particlate density sensor
@@ -172,4 +178,4 @@ class SDS011(object):
         quality_rating = (-1, aqi.US_2_5.apply(pm25), aqi.US_10.apply(pm10))
         quality_rating = max(list(filter(lambda x: x != None, quality_rating)))
         quality_rating = round(quality_rating)
-        return quality_rating
+        return SDS011Reading(pm25=pm25, pm10=pm10, aqi=quality_rating)
